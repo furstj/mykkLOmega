@@ -5,4 +5,7 @@ compilation:
 
 wmake libso
 
-testcase in T3A
+testcase in T3A:
+
+run with 
+unset FOAM_SIGFPE
