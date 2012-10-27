@@ -1,0 +1,73 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.6                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      binary;
+    class       dictionary;
+    location    "system";
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default         steadyState;
+}
+
+gradSchemes
+{
+    limitedGauss    cellLimited Gauss linear 1;
+    default         Gauss linear;
+    grad(U)         Gauss linear;
+    grad(p)         Gauss linear;
+}
+
+divSchemes
+{
+    default         none;
+    div(phi,U)      Gauss linearUpwindV limitedGauss;
+    div((nuEff*dev(T(grad(U))))) Gauss linear;
+    div(phi,kt)     Gauss linearUpwind limitedGauss;
+    div(phi,kl)     Gauss linearUpwind limitedGauss;
+    div(phi,omega)  Gauss linearUpwind limitedGauss;
+    div(U,p)     Gauss linear;
+}
+
+laplacianSchemes
+{
+    default Gauss linear corrected;
+    laplacian(muEff,U) Gauss linear corrected;
+    laplacian(alphaEff,h) Gauss linear corrected;
+    laplacian((rho*rAU),p) Gauss linear corrected;
+    laplacian(DepsilonEff,epsilon) Gauss linear corrected;
+    laplacian(DkEff,k) Gauss linear corrected;
+    laplacian(1,p)  Gauss linear corrected;
+    laplacian((rho*(1|A(U))),p) Gauss linear corrected;
+    laplacian(DomegaEff,omega)    Gauss linear corrected;
+}
+
+interpolationSchemes
+{
+    default         linear;
+    div(U,p)        upwind phi;
+}
+
+snGradSchemes
+{
+    default         corrected;
+}
+
+fluxRequired
+{
+    default         no;
+    p               ;
+}
+
+
+// ************************************************************************* //

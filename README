@@ -1,0 +1,8 @@
+kkLOmega model for openfoam
+===========================
+
+compilation:
+
+wmake libso
+
+testcase in T3A
