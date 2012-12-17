@@ -35,12 +35,6 @@ Description
         Navier-Stokes Simulations of Transitional Flow"
     \endverbatim
 
-    The corrections with respect to original article described in:
-    \verbatim
-        J. Furst
-        "Numerical Simulation of Transitional Flows with Laminar Kinetic Energy"
-    \endverbatim
-
     The default model coefficients correspond to the following:
     \verbatim
         mykkLOmegaCoeffs
