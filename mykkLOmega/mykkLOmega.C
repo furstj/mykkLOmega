@@ -565,6 +565,21 @@ tmp<fvVectorMatrix> mykkLOmega::divDevReff(volVectorField& U) const
     );
 }
 
+tmp<fvVectorMatrix> mykkLOmega::divDevRhoReff
+(
+    const volScalarField& rho,
+    volVectorField& U
+) const
+{
+    volScalarField muEff("muEff", rho*nuEff());
+
+    return
+    (
+      - fvm::laplacian(muEff, U)
+      - fvc::div(muEff*dev(T(fvc::grad(U))))
+    );
+}
+
 
 bool mykkLOmega::read()
 {
