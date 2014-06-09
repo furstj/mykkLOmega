@@ -181,6 +181,8 @@ protected:
             volScalarField nut_;
             wallDist y_;
 
+            dimensionedScalar kMin_;
+            dimensionedScalar omegaMin_;
 
 public:
 
@@ -194,9 +196,7 @@ public:
         (
             const volVectorField& U,
             const surfaceScalarField& phi,
-            transportModel& transport,
-            const word& turbulenceModelName = turbulenceModel::typeName,
-            const word& modelName = typeName
+            transportModel& transport
         );
 
 
@@ -276,9 +276,6 @@ public:
 
         //- Return the source term for the momentum equation
         virtual tmp<fvVectorMatrix> divDevReff(volVectorField& U) const;
-
-        virtual tmp<fvVectorMatrix> divDevRhoReff(const volScalarField& rho,
-						  volVectorField& U) const;
 
         //- Solve the turbulence equations and correct the turbulence viscosity
         virtual void correct();

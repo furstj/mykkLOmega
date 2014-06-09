@@ -198,12 +198,10 @@ mykkLOmega::mykkLOmega
 (
     const volVectorField& U,
     const surfaceScalarField& phi,
-    transportModel& transport,
-    const word& turbulenceModelName,
-    const word& modelName
+    transportModel& transport
 )
 :
-    RASModel(modelName, U, phi, transport, turbulenceModelName),
+    RASModel(typeName, U, phi, transport),
 
     A0_
     (
@@ -496,11 +494,10 @@ mykkLOmega::mykkLOmega
         ),
         autoCreateNut("nut", mesh_)
     ),
-    y_(mesh_)
+    y_(mesh_),
+    kMin_("kMin", sqr(dimVelocity), VSMALL),
+    omegaMin_("omegaMin", inv(dimTime), VSMALL)
 {
-  kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), VSMALL);
-  omegaMin_ = dimensionedScalar("omegaMin", inv(dimTime), VSMALL);
-
     bound(kt_, kMin_);
     bound(kl_, kMin_);
     bound(omega_, omegaMin_);
@@ -561,25 +558,9 @@ tmp<fvVectorMatrix> mykkLOmega::divDevReff(volVectorField& U) const
     return
     (
       - fvm::laplacian(nuEff(), U)
-      - fvc::div(nuEff()*dev(T(fvc::grad(U))))
+      - fvc::div(nuEff()*dev(fvc::grad(U)().T()))
     );
 }
-
-tmp<fvVectorMatrix> mykkLOmega::divDevRhoReff
-(
-    const volScalarField& rho,
-    volVectorField& U
-) const
-{
-    volScalarField muEff("muEff", rho*nuEff());
-
-    return
-    (
-      - fvm::laplacian(muEff, U)
-      - fvc::div(muEff*dev(T(fvc::grad(U))))
-    );
-}
-
 
 bool mykkLOmega::read()
 {
@@ -733,7 +714,6 @@ void mykkLOmega::correct()
 
 
     omegaEqn().relax();
-    omegaEqn().boundaryManipulate(omega_.boundaryField());
 
     solve(omegaEqn);
     bound(omega_, omegaMin_);
@@ -755,7 +735,6 @@ void mykkLOmega::correct()
     );
 
     klEqn().relax();
-    klEqn().boundaryManipulate(kl_.boundaryField());
 
     solve(klEqn);
     bound(kl_, kMin_);
@@ -776,7 +755,6 @@ void mykkLOmega::correct()
     );
 
     ktEqn().relax();
-    ktEqn().boundaryManipulate(kt_.boundaryField());
 
     solve(ktEqn);
     bound(kt_, kMin_);
