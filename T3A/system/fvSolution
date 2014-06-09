@@ -31,7 +31,7 @@ solvers
         mergeLevels     1;
     }
     
-    U
+    "(U|kt|kl|omega)"
     {
         solver          smoothSolver;
         smoother        GaussSeidel;
@@ -40,30 +40,6 @@ solvers
         relTol          0.001;
     }
 
-    kt
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
-    }
-    kl
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
-    }
-    omega
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
-    }
 }
 
 SIMPLE
