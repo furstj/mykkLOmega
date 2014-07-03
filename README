@@ -12,7 +12,8 @@ unset FOAM_SIGFPE
 
 Notes:
 -----
-There are 3 branches for different versions of OpenFOAM / Foam-extend
+There are 4 branches for different versions of OpenFOAM / Foam-extend
 - master: this one should be compatible with OF 2.1 and later
 - foam-extend-3.0: this one should be compatible with foam-extend (but I didn't tested it yet)
 - OpenFOAM-2.1: this one is the OF-2.1-only version (superseded by master branch)
+- devel: version used for model development

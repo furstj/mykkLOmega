@@ -155,21 +155,33 @@ tmp<volScalarField> mykkLOmega::fOmega
 
 tmp<volScalarField> mykkLOmega::gammaBP(const volScalarField& Omega) const
 {
-    return
-    (
-        max
-        (
-            kt_/nu()
-          / max(
-                Omega,
-		dimensionedScalar("ROOTVSMALL", Omega.dimensions(), ROOTVSMALL)
-		)
-	    - CbpCrit_,
-            scalar(0)
-	 )
-     );
+    if (medinaPhiBP_)
+        return
+            (
+                max
+                (
+                    sqrt(kt_)*y_/nu()
+                    - CbpCrit_,
+                    scalar(0)
+                )
+            );
+
+    else
+        return
+            (
+                max
+                (
+                    kt_/nu()
+                    / max(
+                        Omega,
+                        dimensionedScalar("ROOTVSMALL", Omega.dimensions(), ROOTVSMALL)
+                    )
+                    - CbpCrit_,
+                    scalar(0)
+                )
+            );
 }
-  
+
 
 tmp<volScalarField> mykkLOmega::gammaNAT
 (
@@ -178,17 +190,17 @@ tmp<volScalarField> mykkLOmega::gammaNAT
 ) const
 {
     return
-    (
-        max
         (
-            ReOmega
-          - CnatCrit_
-	    / max(
-		  fNatCrit, dimensionedScalar("ROTVSMALL", dimless, ROOTVSMALL)
-            ),
-            scalar(0)
-        )
-    );
+            max
+            (
+                ReOmega
+                - CnatCrit_
+                / max(
+                    fNatCrit, dimensionedScalar("ROTVSMALL", dimless, ROOTVSMALL)
+                ),
+                scalar(0)
+            )
+        );
 }
 
 
@@ -202,9 +214,9 @@ mykkLOmega::mykkLOmega
     const word& turbulenceModelName,
     const word& modelName
 )
-:
+    :
     RASModel(modelName, U, phi, transport, turbulenceModelName),
-
+    
     A0_
     (
         dimensioned<scalar>::lookupOrAddToDict
@@ -496,10 +508,22 @@ mykkLOmega::mykkLOmega
         ),
         autoCreateNut("nut", mesh_)
     ),
-    y_(mesh_)
+
+    y_(mesh_),
+
+    medinaPhiBP_
+    (
+        Switch::lookupOrAddToDict
+        (
+            "medinaPhiBP",
+            coeffDict_,
+            false
+        )
+    )
+
 {
-  kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), VSMALL);
-  omegaMin_ = dimensionedScalar("omegaMin", inv(dimTime), VSMALL);
+    kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), VSMALL);
+    omegaMin_ = dimensionedScalar("omegaMin", inv(dimTime), VSMALL);
 
     bound(kt_, kMin_);
     bound(kl_, kMin_);
@@ -613,6 +637,8 @@ bool mykkLOmega::read()
         Prtheta_.readIfPresent(coeffDict());
         Sigmak_.readIfPresent(coeffDict());
         Sigmaw_.readIfPresent(coeffDict());
+
+        medinaPhiBP_.readIfPresent("medinaPhiBP", coeffDict());
 
         return true;
     }
