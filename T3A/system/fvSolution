@@ -19,19 +19,27 @@ solvers
 {
     p
     {
-        solver          PCG;
-	preconditioner  DIC;
-        tolerance       1e-09;
-        relTol          0.0001;
+        solver          GAMG;
+        tolerance       1e-06;
+        relTol          1.e-3;
+        smoother        GaussSeidel;
+        nPreSweeps      2;
+        nPostSweeps     2;
+        cacheAgglomeration true;
+        nCellsInCoarsestLevel 10;
+        agglomerator    faceAreaPair;
+        mergeLevels     1;
     }
-    
+   
     "(U|kt|kl|omega)"
     {
-        solver          PBiCG;
-        preconditioner  DILU;
-        tolerance       1e-09;
-        relTol          0.001;
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        nSweeps         2;
+        tolerance       1e-08;
+        relTol          1.e-3;
     }
+
 }
 
 SIMPLE
