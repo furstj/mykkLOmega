@@ -1,0 +1,1 @@
+run simpleFoam, then wallGradU and sample. There is a script (c_log.gpl) for gnuplot to compare results with ERCOFTAC data. 

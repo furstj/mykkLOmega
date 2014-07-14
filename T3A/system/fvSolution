@@ -30,7 +30,7 @@ solvers
         agglomerator    faceAreaPair;
         mergeLevels     1;
     }
-   
+    
     "(U|kt|kl|omega)"
     {
         solver          smoothSolver;
