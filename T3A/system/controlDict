@@ -15,7 +15,8 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-libs ("libmykkLOmega.so");
+//libs ("libmykkLOmega.so");
+libs ("libmyIncompressibleRASModels.so");
 
 application     simpleFoam;
 

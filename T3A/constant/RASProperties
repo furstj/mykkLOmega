@@ -20,4 +20,36 @@ turbulence          on;
 printCoeffs         on;
 
 
+megaCoeffs
+{
+  medinaPhiBP     false;
+  CbpCrit         1.2;
+  A0              4.04;
+  As              2.12;
+  Av              6.75;
+  Abp             0.6;
+  Anat            200;
+  Ats             200;
+  Cnc             0.1;
+  CnatCrit        1250;
+  Cint            0.75;
+  CtsCrit         1000;
+  CrNat           0.02;
+  C11             3.4e-06;
+  C12             1e-10;
+  CR              0.12;
+  CalphaTheta     0.035;
+  Css             1.5;
+  CtauL           4360;
+  Cw1             0.44;
+  Cw2             0.92;
+  Cw3             0.3;
+  CwR             1.5;
+  Clambda         2.495;
+  CmuStd          0.09;
+  Prtheta         0.85;
+  Sigmak          1;
+  Sigmaw          1.17;
+}
+
 // ************************************************************************* //

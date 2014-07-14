@@ -19,49 +19,17 @@ solvers
 {
     p
     {
-        solver          GAMG;
-        tolerance       1e-06;
+        solver          PCG;
+	preconditioner  DIC;
+        tolerance       1e-09;
         relTol          0.0001;
-        smoother        GaussSeidel;
-        nPreSweeps      1;
-        nPostSweeps     2;
-        cacheAgglomeration true;
-        nCellsInCoarsestLevel 10;
-        agglomerator    faceAreaPair;
-        mergeLevels     1;
     }
     
-    U
+    "(U|kt|kl|omega)"
     {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
-    }
-
-    kt
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
-    }
-    kl
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
-    }
-    omega
-    {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
+        solver          PBiCG;
+        preconditioner  DILU;
+        tolerance       1e-09;
         relTol          0.001;
     }
 }
