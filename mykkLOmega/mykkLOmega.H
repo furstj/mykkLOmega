@@ -183,6 +183,20 @@ protected:
     
     Switch medinaPhiBP_;
 
+    // Temporary fields for model analysis
+    volScalarField fv_;
+    volScalarField fINT_;
+    volScalarField fSS_;
+    volScalarField Cmu_;
+    volScalarField BetaTS_;
+    volScalarField fTaul_;
+    volScalarField fOmega_;
+    volScalarField gammaBP_;
+    volScalarField gammaNAT_;
+    volScalarField ReOmega_;
+    volScalarField RBP_;
+    volScalarField RNAT_;
+
 public:
     
     //- Runtime type information

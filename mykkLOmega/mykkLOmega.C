@@ -519,6 +519,174 @@ mykkLOmega::mykkLOmega
             coeffDict_,
             false
         )
+     ),
+
+    fv_
+    (
+        IOobject
+        (
+            "fv",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+     ),
+
+    fINT_
+    (
+        IOobject
+        (
+            "fINT",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+     ),
+
+    fSS_
+    (
+        IOobject
+        (
+            "fSS",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    Cmu_
+    (
+        IOobject
+        (
+            "Cmu",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    BetaTS_
+    (
+        IOobject
+        (
+            "BetaTS",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    fTaul_
+    (
+        IOobject
+        (
+            "fTaul",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    fOmega_
+    (
+        IOobject
+        (
+            "fOmega",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    gammaBP_
+    (
+        IOobject
+        (
+            "gammaBP",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    gammaNAT_
+    (
+        IOobject
+        (
+            "gammaNAT",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    ReOmega_
+    (
+        IOobject
+        (
+            "ReOmega",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    RBP_
+    (
+        IOobject
+        (
+            "RBP",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        dimensionedScalar("zero", kt_.dimensions()/dimTime, 0)
+    ),
+
+    RNAT_
+    (
+        IOobject
+        (
+            "RNAT",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        dimensionedScalar("zero", kt_.dimensions()/dimTime, 0)
     )
 
 {
@@ -684,25 +852,34 @@ void mykkLOmega::correct()
 
     const volScalarField S2(2.0*magSqr(symm(gradU)));
 
-    const volScalarField ktS(fSS(Omega)*fw*kt_);
+    fSS_ = fSS(Omega);
+    fv_ = fv(sqr(fw)*kt_/nu()/omega_);
+    fINT_ = fINT();
+    Cmu_ = Cmu(sqrt(S2));
+
+    const volScalarField ktS(fSS_*fw*kt_);
 
     const volScalarField nuts
     (
-     fv(sqr(fw)*kt_/nu()/omega_)
-     *fINT()
-       *Cmu(sqrt(S2))*sqrt(ktS)*lambdaEff
+        fv_
+        *fINT_
+        *Cmu_*sqrt(ktS)*lambdaEff
     );
     const volScalarField Pkt(nuts*S2);
 
     const volScalarField ktL(kt_ - ktS);
-    const volScalarField ReOmega(sqr(y_)*Omega/nu());
+    // const volScalarField ReOmega(sqr(y_)*Omega/nu());
+    ReOmega_ = sqr(y_)*Omega/nu();
+
+    BetaTS_ = BetaTS(ReOmega_);
+    fTaul_  = fTaul(lambdaEff, ktL, Omega);
     const volScalarField nutl
     (
         min
         (
-	 C11_*fTaul(lambdaEff, ktL, Omega)*Omega*sqr(lambdaEff)
+	 C11_*fTaul_*Omega*sqr(lambdaEff)
           * sqrt(ktL)*lambdaEff/nu()
-          + C12_*BetaTS(ReOmega)*ReOmega*sqr(y_)*Omega
+          + C12_*BetaTS_*ReOmega_*sqr(y_)*Omega
         ,
             0.5*(kl_ + ktL)/sqrt(S2)
         )
@@ -712,28 +889,31 @@ void mykkLOmega::correct()
 
     const volScalarField alphaTEff
     (
-        alphaT(lambdaEff, fv(sqr(fw)*kt_/nu()/max(omega_, omegaMin_)), ktS)
+        alphaT(lambdaEff, fv_, ktS)
     );
 
     // By pass source term divided by kl_
 
     const dimensionedScalar fwMin("SMALL", dimless, ROOTVSMALL);
-
+    gammaBP_ = gammaBP(Omega);
     const volScalarField Rbp
     (
-        CR_*(1.0 - exp(-gammaBP(Omega)()/Abp_))*omega_
+        CR_*(1.0 - exp(-gammaBP_/Abp_))*omega_
 	/ max(fw,fwMin)
     );
+    RBP_ = Rbp * kl_;
 
     const volScalarField fNatCrit(1.0 - exp(-Cnc_*sqrt(kl_)*y_/nu()));
     // Natural source term divided by kl_
+    gammaNAT_ = gammaNAT(ReOmega_, fNatCrit);
     const volScalarField Rnat
     (
-        CrNat_*(1.0 - exp(-gammaNAT(ReOmega, fNatCrit)/Anat_))*Omega
+        CrNat_*(1.0 - exp(-gammaNAT_/Anat_))*Omega
     );
-
+    RNAT_ = Rnat * kl_;
 
     // Turbulence specific dissipation rate equation
+    fOmega_ = fOmega(lambdaEff, lambdaT);
     omega_.boundaryField().updateCoeffs();
     tmp<fvScalarMatrix> omegaEqn
     (
@@ -754,7 +934,7 @@ void mykkLOmega::correct()
           , omega_
         )
         - fvm::Sp(Cw2_*omega_*sqr(fw), omega_)
-      + Cw3_*fOmega(lambdaEff, lambdaT)*alphaTEff*sqr(fw)*sqrt(kt_)/pow3(y_)
+      + Cw3_*fOmega_*alphaTEff*sqr(fw)*sqrt(kt_)/pow3(y_)
     );
 
 
