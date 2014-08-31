@@ -460,6 +460,11 @@ mykkLOmega::mykkLOmega
             1.17
         )
     ),
+
+    kMax_("kMax", sqr(dimVelocity), HUGE),
+
+    omegaMax_("omegaMax", inv(dimTime), HUGE),
+
     kt_
     (
         IOobject
@@ -518,6 +523,26 @@ mykkLOmega::mykkLOmega
             "medinaPhiBP",
             coeffDict_,
             false
+        )
+     ),
+
+    CDT_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "CDT",
+            coeffDict_,
+            1.0
+        )
+     ),
+
+    viscosityRatioLimit_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "viscosityRatioLimit",
+            coeffDict_,
+            1.0e5
         )
      ),
 
@@ -687,20 +712,50 @@ mykkLOmega::mykkLOmega
         ),
 	mesh_,
         dimensionedScalar("zero", kt_.dimensions()/dimTime, 0)
+     ),
+
+    Pkt_
+    (
+        IOobject
+        (
+            "Pkt",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        dimensionedScalar("zero", kt_.dimensions()/dimTime, 0)
+     ),
+
+    Pkl_
+    (
+        IOobject
+        (
+            "Pkl",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        dimensionedScalar("zero", kt_.dimensions()/dimTime, 0)
     )
+
 
 {
     kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), VSMALL);
+    kMax_.readIfPresent(*this);
     omegaMin_ = dimensionedScalar("omegaMin", inv(dimTime), VSMALL);
+    omegaMax_.readIfPresent(*this);
 
-    bound(kt_, kMin_);
-    bound(kl_, kMin_);
-    bound(omega_, omegaMin_);
+    boundMinMax(kt_, kMin_, kMax_);
+    boundMinMax(kl_, kMin_, kMax_);
+    boundMinMax(omega_, omegaMin_, omegaMax_);
 
     nut_ = kt_/(omega_ + omegaMin_);
     nut_.correctBoundaryConditions();
 
-    Info << ROOTVSMALL << endl;
     printCoeffs();
 }
 
@@ -807,12 +862,71 @@ bool mykkLOmega::read()
         Sigmaw_.readIfPresent(coeffDict());
 
         medinaPhiBP_.readIfPresent("medinaPhiBP", coeffDict());
+        CDT_.readIfPresent(coeffDict());
+        viscosityRatioLimit_.readIfPresent(coeffDict());
 
         return true;
     }
     else
     {
         return false;
+    }
+}
+
+  void mykkLOmega::boundMinMax    // taken from foam-3.0
+(
+    volScalarField& vsf,
+    const dimensionedScalar& vsf0,
+    const dimensionedScalar& vsf1
+) const
+{
+    scalar minVsf = min(vsf).value();
+    scalar maxVsf = max(vsf).value();
+
+    if (minVsf < vsf0.value() || maxVsf > vsf1.value())
+    {
+        Info<< "bounding " << vsf.name()
+            << ", min: " << minVsf
+            << " max: " << maxVsf
+            << " average: " << gAverage(vsf.internalField())
+            << endl;
+    }
+
+    if (minVsf < vsf0.value())
+    {
+        vsf.internalField() = max
+        (
+            max
+            (
+                vsf.internalField(),
+                fvc::average(max(vsf, vsf0))().internalField()
+                *pos(vsf0.value() - vsf.internalField())
+            ),
+            vsf0.value()
+        );
+        Info<< "new min: " << gMin(vsf.internalField()) << endl;
+        vsf.correctBoundaryConditions();
+        vsf.boundaryField() = max(vsf.boundaryField(), vsf0.value());
+    }
+    
+    if (maxVsf > vsf1.value())
+    {
+        vsf.internalField() = min
+        (
+            min
+            (
+                vsf.internalField(),
+                fvc::average(min(vsf, vsf1))().internalField()
+                *neg(vsf1.value() - vsf.internalField())
+                // This is needed when all values are above max
+                // HJ, 18/Apr/2009
+              + pos(vsf1.value() - vsf.internalField())*vsf1.value()
+            ),
+            vsf1.value()
+        );
+        Info<< "new max: " << gMax(vsf.internalField()) << endl;
+        vsf.correctBoundaryConditions();
+        vsf.boundaryField() = min(vsf.boundaryField(), vsf1.value());
     }
 }
 
@@ -865,7 +979,7 @@ void mykkLOmega::correct()
         *fINT_
         *Cmu_*sqrt(ktS)*lambdaEff
     );
-    const volScalarField Pkt(nuts*S2);
+    Pkt_ = nuts*S2;
 
     const volScalarField ktL(kt_ - ktS);
     // const volScalarField ReOmega(sqr(y_)*Omega/nu());
@@ -879,13 +993,13 @@ void mykkLOmega::correct()
         (
 	 C11_*fTaul_*Omega*sqr(lambdaEff)
           * sqrt(ktL)*lambdaEff/nu()
-          + C12_*BetaTS_*ReOmega_*sqr(y_)*Omega
+	 + C12_*BetaTS_*ReOmega_*sqr(y_)*Omega
         ,
             0.5*(kl_ + ktL)/sqrt(S2)
         )
     );
 
-    const volScalarField Pkl(nutl*S2);
+    Pkl_ = nutl*S2;
 
     const volScalarField alphaTEff
     (
@@ -927,7 +1041,7 @@ void mykkLOmega::correct()
             "laplacian(alphaTEff,omega)"
         )
      ==
-        Cw1_*Pkt*omega_/(kt_ + kMin_)
+        Cw1_*Pkt_*omega_/(kt_ + kMin_)
       + fvm::SuSp
         (
             (CwR_/(fw + fwMin) - 1.0)*kl_*(Rbp + Rnat)/(kt_ + kMin_)
@@ -942,11 +1056,11 @@ void mykkLOmega::correct()
     omegaEqn().boundaryManipulate(omega_.boundaryField());
 
     solve(omegaEqn);
-    bound(omega_, omegaMin_);
+    boundMinMax(omega_, omegaMin_, omegaMax_);
 
 
     // Laminar kinetic energy equation
-    const volScalarField Dl(nu()*magSqr(fvc::grad(sqrt(kl_))));
+    const volScalarField Dl(CDT_ * nu() * magSqr(fvc::grad(sqrt(kl_))));
     tmp<fvScalarMatrix> klEqn
     (
         fvm::ddt(kl_)
@@ -954,7 +1068,7 @@ void mykkLOmega::correct()
       - fvm::Sp(fvc::div(phi_), kl_)
       - fvm::laplacian(nu(), kl_, "laplacian(nu,kl)")
      ==
-        Pkl
+        Pkl_
         - fvm::Sp(Rbp, kl_)
         - fvm::Sp(Rnat, kl_)
         - fvm::Sp(Dl/max(kl_,kMin_), kl_)
@@ -964,10 +1078,10 @@ void mykkLOmega::correct()
     klEqn().boundaryManipulate(kl_.boundaryField());
 
     solve(klEqn);
-    bound(kl_, kMin_);
+    boundMinMax(kl_, kMin_, kMax_);
 
     // Turbulent kinetic energy equation
-    const volScalarField Dt(nu()*magSqr(fvc::grad(sqrt(kt_))));
+    const volScalarField Dt(CDT_ * nu() * magSqr(fvc::grad(sqrt(kt_))));
     tmp<fvScalarMatrix> ktEqn
     (
         fvm::ddt(kt_)
@@ -975,7 +1089,7 @@ void mykkLOmega::correct()
       - fvm::Sp(fvc::div(phi_), kt_)
       - fvm::laplacian(DkEff(alphaTEff), kt_, "laplacian(alphaTEff,kt)")
      ==
-        Pkt
+        Pkt_
         + (Rbp + Rnat)*kl_
         - fvm::Sp(Dt/max(kt_,kMin_), kt_)
         - fvm::Sp(omega_, kt_)
@@ -985,13 +1099,16 @@ void mykkLOmega::correct()
     ktEqn().boundaryManipulate(kt_.boundaryField());
 
     solve(ktEqn);
-    bound(kt_, kMin_);
+    boundMinMax(kt_, kMin_, kMax_);
 
 
 
     // Re-calculate viscosity
     nut_ = nuts + nutl;
     nut_.correctBoundaryConditions();
+    dimensionedScalar nuRef("nuRef", dimensionSet(0,2,-1,0,0,0,0), nu()()[0]);
+    boundMinMax(nut_, 0.0*nuRef, viscosityRatioLimit_*nuRef);
+
 }
 
 

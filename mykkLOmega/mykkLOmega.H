@@ -137,7 +137,13 @@ class mykkLOmega
         const volScalarField& fNatCrit
     ) const;
     
-    
+    void boundMinMax
+    (
+        volScalarField& vsf,
+        const dimensionedScalar& vsf0,
+        const dimensionedScalar& vsf1
+    ) const;
+
 protected:
     
     // Protected data
@@ -172,7 +178,9 @@ protected:
     dimensionedScalar Sigmak_;
     dimensionedScalar Sigmaw_;
     
-    
+    dimensionedScalar kMax_;
+    dimensionedScalar omegaMax_;
+
     // Fields
     
     volScalarField kt_;
@@ -182,6 +190,8 @@ protected:
     wallDist y_;
     
     Switch medinaPhiBP_;
+    dimensionedScalar CDT_;
+    dimensionedScalar viscosityRatioLimit_;
 
     // Temporary fields for model analysis
     volScalarField fv_;
@@ -196,6 +206,8 @@ protected:
     volScalarField ReOmega_;
     volScalarField RBP_;
     volScalarField RNAT_;
+    volScalarField Pkt_;
+    volScalarField Pkl_;
 
 public:
     
