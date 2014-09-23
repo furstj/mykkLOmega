@@ -56,7 +56,7 @@ tmp<volScalarField> mykkLOmega::fINT() const
     (
         min
         (
-            kt_/(Cint_*(kl_ + kt_)),
+	 kt_/(Cint_*max(kl_ + kt_, kMin_)),
             dimensionedScalar("1.0", dimless, 1.0)
         )
     );
@@ -65,7 +65,7 @@ tmp<volScalarField> mykkLOmega::fINT() const
 
 tmp<volScalarField> mykkLOmega::fSS(const volScalarField& Omega) const
 {
-    return(exp(-sqr(Css_*nu()*Omega/kt_)));
+  return(exp(-sqr(Css_*nu()*Omega/max(kt_,kMin_))));
 }
 
 
@@ -744,9 +744,9 @@ mykkLOmega::mykkLOmega
 
 
 {
-    kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), VSMALL);
+    kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), ROOTVSMALL);
     kMax_.readIfPresent(*this);
-    omegaMin_ = dimensionedScalar("omegaMin", inv(dimTime), VSMALL);
+    omegaMin_ = dimensionedScalar("omegaMin", inv(dimTime), ROOTVSMALL);
     omegaMax_.readIfPresent(*this);
 
     boundMinMax(kt_, kMin_, kMax_);
