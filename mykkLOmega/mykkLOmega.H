@@ -107,8 +107,14 @@ class mykkLOmega
     
     tmp<volScalarField> Cmu(const volScalarField& S) const;
     
-    tmp<volScalarField> BetaTS(const volScalarField& Rew) const;
-    
+  tmp<volScalarField> BetaTS(const volScalarField& Rew, const volScalarField& L) const;
+
+    tmp<volScalarField> L(const volScalarField& Rew) const;
+
+    tmp<volScalarField> CTSCrit(const volScalarField& L) const;
+
+    tmp<volScalarField> CnatCrit(const volScalarField& L) const;
+
     tmp<volScalarField> fTaul
     (
         const volScalarField& lambdaEff,
@@ -134,7 +140,8 @@ class mykkLOmega
     tmp<volScalarField> gammaNAT
     (
         const volScalarField& ReOmega,
-        const volScalarField& fNatCrit
+        const volScalarField& fNatCrit,
+        const volScalarField& L
     ) const;
     
     void boundMinMax
@@ -159,8 +166,10 @@ protected:
     dimensionedScalar CbpCrit_;
     dimensionedScalar Cnc_;
     dimensionedScalar CnatCrit_;
+    dimensionedScalar CnatApg_;
     dimensionedScalar Cint_;
     dimensionedScalar CtsCrit_;
+    dimensionedScalar CtsApg_;
     dimensionedScalar CrNat_;
     dimensionedScalar C11_;
     dimensionedScalar C12_;
@@ -190,6 +199,7 @@ protected:
     wallDist y_;
     
     Switch medinaPhiBP_;
+    Switch furstPG_;
     dimensionedScalar CDT_;
     dimensionedScalar viscosityRatioLimit_;
 
@@ -199,6 +209,8 @@ protected:
     volScalarField fSS_;
     volScalarField Cmu_;
     volScalarField BetaTS_;
+    volScalarField BetaNAT_;
+    volScalarField BetaBP_;
     volScalarField fTaul_;
     volScalarField fOmega_;
     volScalarField gammaBP_;
@@ -208,6 +220,7 @@ protected:
     volScalarField RNAT_;
     volScalarField Pkt_;
     volScalarField Pkl_;
+    volScalarField L_;
 
 public:
     

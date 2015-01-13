@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "mykkLOmega.H"
+#include "volFields.H"
 #include "addToRunTimeSelectionTable.H"
 
 #include "backwardsCompatibilityWallFunctions.H"
@@ -75,9 +76,10 @@ tmp<volScalarField> mykkLOmega::Cmu(const volScalarField& S) const
 }
 
 
-tmp<volScalarField> mykkLOmega::BetaTS(const volScalarField& Rew) const
+  tmp<volScalarField> mykkLOmega::BetaTS(const volScalarField& Rew, 
+					 const volScalarField& L) const
 {
-    return(scalar(1) - exp(-sqr(max(Rew - CtsCrit_, scalar(0)))/Ats_));
+  return(scalar(1) - exp(-sqr(max(Rew - CTSCrit(L), scalar(0)))/Ats_));
 }
 
 
@@ -186,7 +188,8 @@ tmp<volScalarField> mykkLOmega::gammaBP(const volScalarField& Omega) const
 tmp<volScalarField> mykkLOmega::gammaNAT
 (
     const volScalarField& ReOmega,
-    const volScalarField& fNatCrit
+    const volScalarField& fNatCrit,
+    const volScalarField& L
 ) const
 {
     return
@@ -194,7 +197,7 @@ tmp<volScalarField> mykkLOmega::gammaNAT
             max
             (
                 ReOmega
-                - CnatCrit_
+                - CnatCrit(L)
                 / max(
                     fNatCrit, dimensionedScalar("ROTVSMALL", dimless, ROOTVSMALL)
                 ),
@@ -203,6 +206,44 @@ tmp<volScalarField> mykkLOmega::gammaNAT
         );
 }
 
+tmp<volScalarField> mykkLOmega::L(const volScalarField& Rew) const
+{
+  const volScalarField& p = mesh_.lookupObject<volScalarField>("p");
+  
+  dimensionedScalar pTot("pTot", p.dimensions(),
+			 gMax( volScalarField( p + 0.5*magSqr(U_) ) ) );
+
+  dimensionedScalar uMin("uMin", dimVelocity, VSMALL);
+
+  volScalarField Ue = sqrt( 2.0 * (pTot - p) ); 
+
+  volScalarField dpdx = (fvc::grad(p) & U_) / max( mag(U_), uMin); 
+  
+  volScalarField K = - nu() / pow3(max(Ue,uMin)) * dpdx;
+
+  return sqr(Rew) * K;
+}
+
+  
+tmp<volScalarField> mykkLOmega::CTSCrit(const volScalarField& L) const
+{
+
+  if (furstPG_) {
+    return 536.40 / (1.0 - CtsApg_ * min(L, 0.0));
+  } 
+  else 
+    return CtsCrit_ * min( max(L, 1.0), 1.0); 
+}
+
+tmp<volScalarField> mykkLOmega::CnatCrit(const volScalarField& L) const
+{
+
+  if (furstPG_) {
+    return CnatCrit_ / (1.0 - CnatApg_ * min(L, 0.0));
+  } 
+  else 
+    return CnatCrit_ * min( max(L, 1.0), 1.0); 
+}
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -298,6 +339,15 @@ mykkLOmega::mykkLOmega
             1250
         )
     ),
+    CnatApg_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "CnatApg",
+            coeffDict_,
+            8.963
+        )
+    ),
     Cint_
     (
         dimensioned<scalar>::lookupOrAddToDict
@@ -314,6 +364,15 @@ mykkLOmega::mykkLOmega
             "CtsCrit",
             coeffDict_,
             1000
+        )
+    ),
+    CtsApg_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "CtsApg",
+            coeffDict_,
+            8.963
         )
     ),
     CrNat_
@@ -526,6 +585,16 @@ mykkLOmega::mykkLOmega
         )
      ),
 
+    furstPG_
+    (
+        Switch::lookupOrAddToDict
+        (
+            "furstPG",
+            coeffDict_,
+            false
+        )
+     ),
+
     CDT_
     (
         dimensioned<scalar>::lookupOrAddToDict
@@ -607,6 +676,34 @@ mykkLOmega::mykkLOmega
         IOobject
         (
             "BetaTS",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    BetaNAT_
+    (
+        IOobject
+        (
+            "BetaNAT",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        0.0
+    ),
+
+    BetaBP_
+    (
+        IOobject
+        (
+            "BetaBP",
             runTime_.timeName(),
             mesh_,
             IOobject::NO_READ,
@@ -740,8 +837,21 @@ mykkLOmega::mykkLOmega
         ),
 	mesh_,
         dimensionedScalar("zero", kt_.dimensions()/dimTime, 0)
-    )
+   ),
 
+    L_
+    (
+        IOobject
+        (
+            "L",
+            runTime_.timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+	mesh_,
+        dimensionedScalar("zero", dimless, 0)
+     )
 
 {
     kMin_ = dimensionedScalar("kMin", sqr(dimVelocity), ROOTVSMALL);
@@ -842,8 +952,10 @@ bool mykkLOmega::read()
         CbpCrit_.readIfPresent(coeffDict());
         Cnc_.readIfPresent(coeffDict());
         CnatCrit_.readIfPresent(coeffDict());
+        CnatApg_.readIfPresent(coeffDict());
         Cint_.readIfPresent(coeffDict());
         CtsCrit_.readIfPresent(coeffDict());
+        CtsApg_.readIfPresent(coeffDict());
         CrNat_.readIfPresent(coeffDict());
         C11_.readIfPresent(coeffDict());
         C12_.readIfPresent(coeffDict());
@@ -862,6 +974,7 @@ bool mykkLOmega::read()
         Sigmaw_.readIfPresent(coeffDict());
 
         medinaPhiBP_.readIfPresent("medinaPhiBP", coeffDict());
+        furstPG_.readIfPresent("furstPG", coeffDict());
         CDT_.readIfPresent(coeffDict());
         viscosityRatioLimit_.readIfPresent(coeffDict());
 
@@ -946,7 +1059,6 @@ void mykkLOmega::correct()
         y_.boundaryField() = max(y_.boundaryField(), VSMALL);
     }
 
-
     const volScalarField kT(kt_ + kl_);
 
     const volScalarField lambdaT( sqrt(kt_)/max(omega_,omegaMin_) );
@@ -966,6 +1078,9 @@ void mykkLOmega::correct()
 
     const volScalarField S2(2.0*magSqr(symm(gradU)));
 
+    ReOmega_ = sqr(y_)*Omega/nu();
+    L_ = L(ReOmega_);
+
     fSS_ = fSS(Omega);
     fv_ = fv(sqr(fw)*kt_/nu()/omega_);
     fINT_ = fINT();
@@ -982,24 +1097,25 @@ void mykkLOmega::correct()
     Pkt_ = nuts*S2;
 
     const volScalarField ktL(kt_ - ktS);
-    // const volScalarField ReOmega(sqr(y_)*Omega/nu());
-    ReOmega_ = sqr(y_)*Omega/nu();
 
-    BetaTS_ = BetaTS(ReOmega_);
+    BetaTS_ = BetaTS(ReOmega_, L_);
     fTaul_  = fTaul(lambdaEff, ktL, Omega);
-    const volScalarField nutl
+
+    volScalarField nutl
     (
-        min
-        (
 	 C11_*fTaul_*Omega*sqr(lambdaEff)
           * sqrt(ktL)*lambdaEff/nu()
 	 + C12_*BetaTS_*ReOmega_*sqr(y_)*Omega
-        ,
-            0.5*(kl_ + ktL)/sqrt(S2)
-        )
     );
 
+    if (!furstPG_)
+      nutl = min(nutl, 0.5*(kl_ + ktL)/sqrt(S2));
+
     Pkl_ = nutl*S2;
+
+    if (furstPG_)
+      nutl = min(nutl, 0.5*(kl_ + ktL)/sqrt(S2));
+    
 
     const volScalarField alphaTEff
     (
@@ -1010,19 +1126,21 @@ void mykkLOmega::correct()
 
     const dimensionedScalar fwMin("SMALL", dimless, ROOTVSMALL);
     gammaBP_ = gammaBP(Omega);
+    BetaBP_ = 1.0 - exp(-gammaBP_/Abp_); 
     const volScalarField Rbp
     (
-        CR_*(1.0 - exp(-gammaBP_/Abp_))*omega_
+        CR_* BetaBP_ *omega_
 	/ max(fw,fwMin)
     );
     RBP_ = Rbp * kl_;
 
     const volScalarField fNatCrit(1.0 - exp(-Cnc_*sqrt(kl_)*y_/nu()));
     // Natural source term divided by kl_
-    gammaNAT_ = gammaNAT(ReOmega_, fNatCrit);
+    gammaNAT_ = gammaNAT(ReOmega_, fNatCrit, L_);
+    BetaNAT_ = 1.0 - exp(-gammaNAT_/Anat_);
     const volScalarField Rnat
     (
-        CrNat_*(1.0 - exp(-gammaNAT_/Anat_))*Omega
+        CrNat_ * BetaNAT_ * Omega
     );
     RNAT_ = Rnat * kl_;
 
