@@ -224,12 +224,30 @@ tmp<volScalarField> mykkLOmega::L(const volScalarField& Rew) const
   return sqr(Rew) * K;
 }
 
+
+tmp<volScalarField> mykkLOmega::C(const volScalarField& L) const
+{
+  volScalarField Lapg = max( min(L, 0.0), -1.5);
+  return  2.1884 * ( 1.0 - 0.95419*Lapg - 0.13183*sqr(Lapg) );
+}
+
+  
+tmp<volScalarField> mykkLOmega::lambda(const volScalarField& L) const
+{
+  return  L / sqr(C(L));
+}
+
+tmp<volScalarField> mykkLOmega::ReThetac(const volScalarField& lambda) const
+{
+  return 200.69 / (1.0 - 55.287 * lambda + 3.4992e+05 * pow4(lambda) );
+
+}
   
 tmp<volScalarField> mykkLOmega::CTSCrit(const volScalarField& L) const
 {
 
   if (furstPG_) {
-    return 536.40 / (1.0 - CtsApg_ * min(L, 0.0));
+    return ReThetac(lambda(L)) * C(L);
   } 
   else 
     return CtsCrit_ * min( max(L, 1.0), 1.0); 
@@ -239,7 +257,7 @@ tmp<volScalarField> mykkLOmega::CnatCrit(const volScalarField& L) const
 {
 
   if (furstPG_) {
-    return CnatCrit_ / (1.0 - CnatApg_ * min(L, 0.0));
+    return CnatCrit_ * CTSCrit(L) / 439.19;
   } 
   else 
     return CnatCrit_ * min( max(L, 1.0), 1.0); 
@@ -339,15 +357,6 @@ mykkLOmega::mykkLOmega
             1250
         )
     ),
-    CnatApg_
-    (
-        dimensioned<scalar>::lookupOrAddToDict
-        (
-            "CnatApg",
-            coeffDict_,
-            8.963
-        )
-    ),
     Cint_
     (
         dimensioned<scalar>::lookupOrAddToDict
@@ -364,15 +373,6 @@ mykkLOmega::mykkLOmega
             "CtsCrit",
             coeffDict_,
             1000
-        )
-    ),
-    CtsApg_
-    (
-        dimensioned<scalar>::lookupOrAddToDict
-        (
-            "CtsApg",
-            coeffDict_,
-            8.963
         )
     ),
     CrNat_
@@ -866,6 +866,7 @@ mykkLOmega::mykkLOmega
     nut_ = kt_/(omega_ + omegaMin_);
     nut_.correctBoundaryConditions();
 
+    Info << "Variant based on Falkner-Skan profiles" << endl;
     printCoeffs();
 }
 
@@ -952,10 +953,8 @@ bool mykkLOmega::read()
         CbpCrit_.readIfPresent(coeffDict());
         Cnc_.readIfPresent(coeffDict());
         CnatCrit_.readIfPresent(coeffDict());
-        CnatApg_.readIfPresent(coeffDict());
         Cint_.readIfPresent(coeffDict());
         CtsCrit_.readIfPresent(coeffDict());
-        CtsApg_.readIfPresent(coeffDict());
         CrNat_.readIfPresent(coeffDict());
         C11_.readIfPresent(coeffDict());
         C12_.readIfPresent(coeffDict());

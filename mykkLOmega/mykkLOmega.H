@@ -107,9 +107,15 @@ class mykkLOmega
     
     tmp<volScalarField> Cmu(const volScalarField& S) const;
     
-  tmp<volScalarField> BetaTS(const volScalarField& Rew, const volScalarField& L) const;
+    tmp<volScalarField> BetaTS(const volScalarField& Rew, const volScalarField& L) const;
 
     tmp<volScalarField> L(const volScalarField& Rew) const;
+
+    tmp<volScalarField> C(const volScalarField& L) const;
+
+    tmp<volScalarField> lambda(const volScalarField& L) const;
+
+    tmp<volScalarField> ReThetac(const volScalarField& lambda) const;
 
     tmp<volScalarField> CTSCrit(const volScalarField& L) const;
 
@@ -166,10 +172,8 @@ protected:
     dimensionedScalar CbpCrit_;
     dimensionedScalar Cnc_;
     dimensionedScalar CnatCrit_;
-    dimensionedScalar CnatApg_;
     dimensionedScalar Cint_;
     dimensionedScalar CtsCrit_;
-    dimensionedScalar CtsApg_;
     dimensionedScalar CrNat_;
     dimensionedScalar C11_;
     dimensionedScalar C12_;
