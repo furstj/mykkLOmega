@@ -722,9 +722,9 @@ void mykkLOmega::correct()
         )
      ==
         Cw1_*Pkt*omega_/(kt_ + kMin_)
-      + fvm::SuSp
+      - fvm::SuSp
         (
-            (CwR_/(fw + fwMin) - 1.0)*kl_*(Rbp + Rnat)/(kt_ + kMin_)
+            (1.0 - CwR_/(fw + fwMin))*kl_*(Rbp + Rnat)/(kt_ + kMin_)
           , omega_
         )
         - fvm::Sp(Cw2_*omega_*sqr(fw), omega_)
@@ -771,8 +771,7 @@ void mykkLOmega::correct()
      ==
         Pkt
         + (Rbp + Rnat)*kl_
-        - fvm::Sp(Dt/max(kt_,kMin_), kt_)
-        - fvm::Sp(omega_, kt_)
+        - fvm::Sp(omega_ + Dt/max(kt_,kMin_), kt_)
     );
 
     ktEqn().relax();
