@@ -1160,9 +1160,9 @@ void mykkLOmega::correct()
         )
      ==
         Cw1_*Pkt_*omega_/(kt_ + kMin_)
-      + fvm::SuSp
+      - fvm::SuSp
         (
-            (CwR_/(fw + fwMin) - 1.0)*kl_*(Rbp + Rnat)/(kt_ + kMin_)
+            (1.0 - CwR_/(fw + fwMin))*kl_*(Rbp + Rnat)/(kt_ + kMin_)
           , omega_
         )
         - fvm::Sp(Cw2_*omega_*sqr(fw), omega_)
