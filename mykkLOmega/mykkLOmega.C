@@ -1151,7 +1151,6 @@ void mykkLOmega::correct()
     (
         fvm::ddt(omega_)
       + fvm::div(phi_, omega_)
-      - fvm::Sp(fvc::div(phi_), omega_)
       - fvm::laplacian
         (
             DomegaEff(alphaTEff),
@@ -1183,7 +1182,6 @@ void mykkLOmega::correct()
     (
         fvm::ddt(kl_)
       + fvm::div(phi_, kl_)
-      - fvm::Sp(fvc::div(phi_), kl_)
       - fvm::laplacian(nu(), kl_, "laplacian(nu,kl)")
      ==
         Pkl_
@@ -1204,7 +1202,6 @@ void mykkLOmega::correct()
     (
         fvm::ddt(kt_)
       + fvm::div(phi_, kt_)
-      - fvm::Sp(fvc::div(phi_), kt_)
       - fvm::laplacian(DkEff(alphaTEff), kt_, "laplacian(alphaTEff,kt)")
      ==
         Pkt_
