@@ -866,6 +866,7 @@ mykkLOmega::mykkLOmega
     nut_ = kt_/(omega_ + omegaMin_);
     nut_.correctBoundaryConditions();
 
+    Info << "Variant based on Pohlhausen profiles" << endl;
     printCoeffs();
 }
 
