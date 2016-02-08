@@ -77,8 +77,8 @@
 #ifndef mykkLOmega_H
 #define mykkLOmega_H
 
-#include "RASModel.H"
-#include "wallDist.H"
+#include "turbulentTransportModel.H"
+#include "eddyViscosity.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -95,7 +95,7 @@ namespace RASModels
 
 class mykkLOmega
 :
-    public RASModel
+    public eddyViscosity<incompressible::RASModel>
 {
     // Private memmber functions
     
@@ -107,7 +107,7 @@ class mykkLOmega
     
     tmp<volScalarField> Cmu(const volScalarField& S) const;
     
-  tmp<volScalarField> BetaTS(const volScalarField& Rew, const volScalarField& L) const;
+    tmp<volScalarField> BetaTS(const volScalarField& Rew, const volScalarField& L) const;
 
     tmp<volScalarField> L(const volScalarField& Rew) const;
 
@@ -151,6 +151,8 @@ class mykkLOmega
         const dimensionedScalar& vsf1
     ) const;
 
+    tmp<volScalarField> D(const volScalarField& k) const;
+
 protected:
     
     // Protected data
@@ -193,10 +195,10 @@ protected:
     // Fields
     
     volScalarField kt_;
-    volScalarField omega_;
     volScalarField kl_;
-    volScalarField nut_;
-    wallDist y_;
+    volScalarField omega_;
+    volScalarField epsilon_;
+    const volScalarField& y_;
     
     Switch medinaPhiBP_;
     Switch furstPG_;
@@ -222,6 +224,8 @@ protected:
     volScalarField Pkl_;
     volScalarField L_;
 
+    virtual void correctNut();
+
 public:
     
     //- Runtime type information
@@ -232,11 +236,14 @@ public:
     //- Construct from components
     mykkLOmega
     (
+        const geometricOneField& alpha,
+        const geometricOneField& rho,
         const volVectorField& U,
+        const surfaceScalarField& alphaRhoPhi,
         const surfaceScalarField& phi,
-        transportModel& transport,
-        const word& turbulenceModelName = turbulenceModel::typeName,
-        const word& modelName = typeName
+        const transportModel& transport,
+        const word& propertiesName = turbulenceModel::propertiesName,
+        const word& type = typeName
     );
 
 
@@ -278,7 +285,7 @@ public:
         }
 
     //- Return the turbulence kinetic energy
-    virtual tmp<volScalarField> k() const
+    virtual tmp<volScalarField> kt() const
         {
             return kt_;
         }
@@ -288,37 +295,30 @@ public:
         {
             return omega_;
         }
-
-    //- Return the turbulence kinetic energy dissipation rate
-    virtual tmp<volScalarField> epsilon() const
+    
+    virtual tmp<volScalarField> k() const
         {
             return tmp<volScalarField>
                 (
                     new volScalarField
                     (
                         IOobject
-                        (
-                            "epsilon",
-                            mesh_.time().timeName(),
-                            mesh_
-                        ),
-                        kt_*omega_,
+                    (
+                        "k",
+                        mesh_.time().timeName(),
+                        mesh_
+                    ),
+                        kt_ + kl_,
                         omega_.boundaryField().types()
                     )
                 );
         }
-
-    //- Return the Reynolds stress tensor
-    virtual tmp<volSymmTensorField> R() const;
-
-    //- Return the effective stress tensor including the laminar stress
-    virtual tmp<volSymmTensorField> devReff() const;
-
-    //- Return the source term for the momentum equation
-    virtual tmp<fvVectorMatrix> divDevReff(volVectorField& U) const;
-
-    virtual tmp<fvVectorMatrix> divDevRhoReff(const volScalarField& rho,
-    volVectorField& U) const;
+    
+    //- Return the turbulence kinetic energy dissipation rate
+    virtual tmp<volScalarField> epsilon() const
+        {
+            return epsilon_;
+        }
 
     //- Solve the turbulence equations and correct the turbulence viscosity
     virtual void correct();
