@@ -48,7 +48,7 @@ interpolationScheme cell;
 // Fields to sample.
 fields
 (
-   wallGradU U y kl kt nut omega 
+   wallGradU U 
 );
 
 
@@ -75,112 +75,6 @@ fields
 //      curve, cloud: list of coordinates
 sets
 (
-   line0045
-   {
-     type midPoint;
-     axis y;
-     start (0.045 0.0 1.e-6);
-     end   (0.045 0.1 1.e-6);
-   }
-   line0095
-   {
-     type midPoint;
-     axis y;
-     start (0.095 0.0 1.e-6);
-     end   (0.095 0.1 1.e-6);
-   }
-   line0195
-   {
-     type midPoint;
-     axis y;
-     start (0.195 0.0 1.e-6);
-     end   (0.195 0.1 1.e-6);
-   }
-   line0295
-   {
-     type midPoint;
-     axis y;
-     start (0.295 0.0 1.e-6);
-     end   (0.295 0.1 1.e-6);
-   }
-   line0395
-   {
-     type midPoint;
-     axis y;
-     start (0.395 0.0 1.e-6);
-     end   (0.395 0.1 1.e-6);
-   }
-   line0495
-   {
-     type midPoint;
-     axis y;
-     start (0.495 0.0 1.e-6);
-     end   (0.495 0.1 1.e-6);
-   }
-   line0595
-   {
-     type midPoint;
-     axis y;
-     start (0.595 0.0 1.e-6);
-     end   (0.595 0.1 1.e-6);
-   }
-   line0695
-   {
-     type midPoint;
-     axis y;
-     start (0.695 0.0 1.e-6);
-     end   (0.695 0.1 1.e-6);
-   }
-   line0795
-   {
-     type midPoint;
-     axis y;
-     start (0.795 0.0 1.e-6);
-     end   (0.795 0.1 1.e-6);
-   }
-   line0895
-   {
-     type midPoint;
-     axis y;
-     start (0.895 0.0 1.e-6);
-     end   (0.895 0.1 1.e-6);
-   }
-   line0995
-   {
-     type midPoint;
-     axis y;
-     start (0.995 0.0 1.e-6);
-     end   (0.995 0.1 1.e-6);
-   }
-   line1095
-   {
-     type midPoint;
-     axis y;
-     start (1.095 0.0 1.e-6);
-     end   (1.095 0.1 1.e-6);
-   }
-   line1195
-   {
-     type midPoint;
-     axis y;
-     start (1.195 0.0 1.e-6);
-     end   (1.195 0.1 1.e-6);
-   }
-   line1295
-   {
-     type midPoint;
-     axis y;
-     start (1.295 0.0 1.e-6);
-     end   (1.295 0.1 1.e-6);
-   }
-   y01
-   {
-     type midPoint;
-     axis x;
-     start (-1 0.1 1.e-6);
-     end   (3 0.1 1.e-6);
-   }
-   
 );
 
 

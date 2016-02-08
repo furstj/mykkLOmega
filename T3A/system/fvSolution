@@ -19,25 +19,30 @@ solvers
 {
     p
     {
-        solver          GAMG;
-        tolerance       1e-06;
-        relTol          0.0001;
-        smoother        GaussSeidel;
-        nPreSweeps      1;
-        nPostSweeps     2;
-        cacheAgglomeration true;
-        nCellsInCoarsestLevel 10;
-        agglomerator    faceAreaPair;
-        mergeLevels     1;
+        solver           GAMG;
+        tolerance        1e-6;
+        relTol           0.001;
+        minIter          5;
+        maxIter          200;
+        smoother         GaussSeidel;
+        nPreSweeps       1;
+        nPostSweeps      3;
+        nFinestSweeps    3;
+        scaleCorrection true;
+        directSolveCoarsest false;
+        cacheAgglomeration on;
+        nCellsInCoarsestLevel 50;
+        agglomerator     faceAreaPair;
+        mergeLevels      1;
     }
-    
+
     "(U|kt|kl|omega)"
     {
-        solver          smoothSolver;
-        smoother        GaussSeidel;
-        nSweeps         2;
-        tolerance       1e-05;
-        relTol          0.001;
+      solver           PBiCG;
+      preconditioner   DILU;
+      tolerance        1e-6;
+      relTol           0.001;
+      minIter          1;
     }
 
 }
@@ -49,12 +54,20 @@ SIMPLE
 
 relaxationFactors
 {
-    p               0.3;
-    U               0.7;
-    kl              0.8;
-    kt              0.8;
-    omega	    0.8;
+   fields
+    {
+        p               0.3;
+    }
+    equations
+    {
+        U               0.7;
+        "(kt|kl|omega)" 0.7;
+    }
 }
 
+cache
+{
+    grad(U);
+}
 
 // ************************************************************************* //
